@@ -8,6 +8,7 @@ import {
   ScrollView,
   Alert,
 } from "react-native";
+import { salvarNoHistoricoDiario } from '@/services/storage';
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -53,21 +54,20 @@ export default function TelaPesquisaPrecos() {
   };
 
   // --- Lógica de Salvamento ---
-  const onSubmit = (data) => {
-    const payload = {
-      produtoId: produtoAtivo.id,
+  const onSubmit = async (data) => {
+    const sucesso = await salvarNoHistoricoDiario({
       nome: produtoAtivo.nome,
       coletas: data.amostras,
-      data: new Date().toISOString(),
-    };
+    });
 
-    console.log("Salvando no Banco Local...", payload);
-    Alert.alert("Sucesso", "Preços registrados com sucesso!");
-
-    // Resetar para a próxima pesquisa
-    setProdutoAtivo(null);
-    setBusca("");
-    reset({ amostras: [{ valor: "" }] });
+    if (sucesso) {
+      Alert.alert("Sucesso", "Dados salvos na tabela diária!");
+      setProdutoAtivo(null);
+      setBusca("");
+      reset({ amostras: [{ valor: "" }] });
+    } else {
+      Alert.alert("Erro", "Não foi possível salvar os dados.");
+    }
   };
 
   return (
