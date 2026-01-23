@@ -1,16 +1,16 @@
-import React, { useState } from "react";
+import { salvarNoHistoricoDiario } from '@/services/storage';
+import { Ionicons } from "@expo/vector-icons";
+import { useState } from "react";
+import { Controller, useFieldArray, useForm } from "react-hook-form";
 import {
-  View,
+  Alert,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  Alert,
+  View,
 } from "react-native";
-import { salvarNoHistoricoDiario } from '@/services/storage';
-import { useForm, useFieldArray, Controller } from "react-hook-form";
-import { Ionicons } from "@expo/vector-icons";
 
 // Mock de produtos (Em um app real, viria de uma API ou Banco Local)
 const PRODUTOS_BASE = [
