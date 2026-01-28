@@ -1,28 +1,33 @@
-import { salvarNoHistoricoDiario } from '@/services/storage';
-import { Ionicons } from "@expo/vector-icons";
-import { useState } from "react";
-import { Controller, useFieldArray, useForm } from "react-hook-form";
+import React, { useState, useMemo, useCallback } from "react";
 import {
-  Alert,
-  ScrollView,
-  StyleSheet,
+  View,
   Text,
   TextInput,
+  Keyboard,
   TouchableOpacity,
-  View,
+  StyleSheet,
+  ScrollView,
+  Alert,
 } from "react-native";
-
-// Mock de produtos (Em um app real, viria de uma API ou Banco Local)
-const PRODUTOS_BASE = [
-  { id: "1", nome: "Tomate Italiano", categoria: "Legumes" },
-  { id: "2", nome: "Banana Prata", categoria: "Frutas" },
-  { id: "3", nome: "Alface Crespa", categoria: "Verduras" },
-];
+import { salvarNoHistoricoDiario } from "@/services/storage";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { Ionicons } from "@expo/vector-icons";
+import { formatarMoeda } from "@/utilitarios/formataMoeda";
+import { ROL_PRODUTOS } from "@/constants/Produtos"; // Agora usando seu rol completo
+import { registrarUsoProduto, buscarFavoritos } from "@/services/storage";
+import { useFocusEffect } from "expo-router";
 
 export default function TelaPesquisaPrecos() {
   const [busca, setBusca] = useState("");
-  const [sugestoes, setSugestoes] = useState([]);
   const [produtoAtivo, setProdutoAtivo] = useState(null);
+  const [favoritos, setFavoritos] = useState<string[]>([]);
+
+  // Buscar favoritos ao focar na tela
+  useFocusEffect(
+    useCallback(() => {
+      buscarFavoritos().then(setFavoritos);
+    }, [])
+  );
 
   // Inicialização do Formulário
   const { control, handleSubmit, reset } = useForm({
@@ -34,23 +39,31 @@ export default function TelaPesquisaPrecos() {
     name: "amostras",
   });
 
-  // --- Lógica de Busca ---
-  const filtrarProdutos = (texto) => {
-    setBusca(texto);
-    if (texto.length > 1) {
-      const filtrados = PRODUTOS_BASE.filter((p) =>
-        p.nome.toLowerCase().includes(texto.toLowerCase())
-      );
-      setSugestoes(filtrados);
-    } else {
-      setSugestoes([]);
-    }
-  };
+  // --- Lógica de Busca Otimizada (Sênior) ---
+  // Usamos useMemo para que o filtro só rode quando o texto da 'busca' mudar
+  const sugestoes = useMemo(() => {
+    if (busca.length < 2 || produtoAtivo) return [];
 
-  const selecionarProduto = (produto) => {
-    setProdutoAtivo(produto);
-    setSugestoes([]);
-    setBusca(produto.nome);
+    // Normaliza o texto (remove acentos e deixa minúsculo)
+    const termoNormalizado = busca
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    return ROL_PRODUTOS.filter((item) => {
+      const itemNormalizado = item
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+      return itemNormalizado.includes(termoNormalizado);
+    }).slice(0, 10); // Limita a 10 itens para performance
+  }, [busca, produtoAtivo]);
+
+  const selecionarProduto = (nomeProduto) => {
+    // Como seu ROL_PRODUTOS é uma lista de strings, o 'produto' aqui é o nome
+    setProdutoAtivo({ nome: nomeProduto });
+    setBusca(nomeProduto);
+    Keyboard.dismiss();
   };
 
   // --- Lógica de Salvamento ---
@@ -61,6 +74,7 @@ export default function TelaPesquisaPrecos() {
     });
 
     if (sucesso) {
+      await registrarUsoProduto(produtoAtivo.nome); // Registra que este produto foi usado
       Alert.alert("Sucesso", "Dados salvos na tabela diária!");
       setProdutoAtivo(null);
       setBusca("");
@@ -81,35 +95,57 @@ export default function TelaPesquisaPrecos() {
           <Ionicons name="search" size={20} color="#999" style={styles.icon} />
           <TextInput
             style={styles.inputBusca}
-            placeholder="Ex: Tomate..."
+            placeholder="Digite para buscar no rol..."
             value={busca}
-            onChangeText={filtrarProdutos}
+            onChangeText={setBusca} // Agora altera apenas o estado 'busca'
           />
           {produtoAtivo && (
-            <TouchableOpacity onPress={() => setProdutoAtivo(null)}>
+            <TouchableOpacity
+              onPress={() => {
+                setProdutoAtivo(null);
+                setBusca("");
+              }}
+            >
               <Ionicons name="close-circle" size={20} color="#e74c3c" />
             </TouchableOpacity>
           )}
         </View>
-
-        {/* LISTA DE SUGESTÕES (DROPDOWN) */}
-        {sugestoes.length > 0 && !produtoAtivo && (
+         {/* SEÇÃO DE FAVORITOS */}
+        {busca.length === 0 && favoritos.length > 0 && !produtoAtivo && (
+          <View style={styles.secaoFavoritos}>
+            <Text style={styles.labelFavoritos}>
+              Frequentemente pesquisados:
+            </Text>
+            <View style={styles.rowFavoritos}>
+              {favoritos.map((fav, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.chipFavorito}
+                  onPress={() => selecionarProduto(fav)}
+                >
+                  <Text style={styles.txtChip}>{fav.split(" ")[0]}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+        {/* LISTA DE SUGESTÕES DINÂMICA */}
+        {sugestoes.length > 0 && (
           <View style={styles.dropdown}>
-            {sugestoes.map((item) => (
+            {sugestoes.map((item, index) => (
               <TouchableOpacity
-                key={item.id}
+                key={index}
                 style={styles.itemSugestao}
                 onPress={() => selecionarProduto(item)}
               >
-                <Text style={styles.txtSugestao}>{item.nome}</Text>
-                <Text style={styles.txtCat}>{item.categoria}</Text>
+                <Text style={styles.txtSugestao}>{item}</Text>
               </TouchableOpacity>
             ))}
           </View>
         )}
       </View>
 
-      {/* SEÇÃO DE AMOSTRAS (SÓ APARECE SE HOUVER PRODUTO) */}
+      {/* SEÇÃO DE AMOSTRAS */}
       {produtoAtivo && (
         <View style={styles.secaoPrecos}>
           <Text style={styles.subtitulo}>
@@ -126,8 +162,11 @@ export default function TelaPesquisaPrecos() {
                     style={styles.inputPreco}
                     placeholder="R$ 0,00"
                     keyboardType="numeric"
-                    value={value}
-                    onChangeText={onChange}
+                    value={value ? `R$ ${formatarMoeda(value)}` : ""}
+                    onChangeText={(text) => {
+                      const cleanValue = text.replace(/\D/g, "");
+                      onChange(cleanValue);
+                    }}
                   />
                 )}
               />
@@ -231,4 +270,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   txtWhite: { color: "#fff", fontWeight: "bold", fontSize: 18 },
+  secaoFavoritos: { marginTop: 15 },
+  labelFavoritos: {
+    fontSize: 12,
+    color: "#95a5a6",
+    marginBottom: 8,
+    fontWeight: "bold",
+  },
+  rowFavoritos: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  chipFavorito: {
+    backgroundColor: "#e8f5e9",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: "#c8e6c9",
+  },
+  txtChip: { color: "#2e7d32", fontSize: 13, fontWeight: "500" },
 });

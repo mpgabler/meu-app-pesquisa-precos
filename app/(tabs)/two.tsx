@@ -1,14 +1,38 @@
-import { StyleSheet } from 'react-native';
+import React, { useState, useCallback } from "react"; // hooks
+import { TouchableOpacity, Text, View, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router"; // Para atualizar os dados
+import { exportarParaCSV, buscarDadosHoje } from "../../services/storage";
 
-import EditScreenInfo from '@/components/EditScreenInfo';
-import { Text, View } from '@/components/Themed';
+export default function TelaExportacao() {
+  const [dados, setDados] = useState([]);
 
-export default function TabTwoScreen() {
+  // Importante: Precisamos buscar os dados para poder exportá-los!
+  useFocusEffect(
+    useCallback(() => {
+      buscarDadosHoje().then(setDados);
+    }, [])
+  );
+
+  // comando 'return' para renderizar a interface (sem ele não funciona)
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Tab Two</Text>
-      <View style={styles.separator} lightColor="#eee" darkColor="rgba(255,255,255,0.1)" />
-      <EditScreenInfo path="app/(tabs)/two.tsx" />
+      <View style={styles.content}>
+        <Text style={styles.instrucao}>
+          Clique abaixo para gerar o relatório consolidado de hoje.
+        </Text>
+      </View>
+
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.btnExportar}
+          onPress={() => exportarParaCSV(dados)}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="share-outline" size={24} color="white" />
+          <Text style={styles.txtExportar}>Exportar para Excel</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -16,16 +40,42 @@ export default function TabTwoScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: "#f5f5f5",
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
+  content: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
   },
-  separator: {
-    marginVertical: 30,
-    height: 1,
-    width: '80%',
+  instrucao: {
+    fontSize: 16,
+    color: "#666",
+    textAlign: "center",
+  },
+  footer: {
+    padding: 20,
+    backgroundColor: "#fff",
+    borderTopWidth: 1,
+    borderTopColor: "#eee",
+  },
+  btnExportar: {
+    backgroundColor: "#1d6f42",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 15,
+    borderRadius: 10,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  txtExportar: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginLeft: 10,
   },
 });
