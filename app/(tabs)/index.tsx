@@ -16,6 +16,7 @@ import { formatarMoeda } from "@/utilitarios/formataMoeda";
 import { ROL_PRODUTOS } from "@/constants/Produtos"; // Agora usando seu rol completo
 import { registrarUsoProduto, buscarFavoritos } from "@/services/storage";
 import { useFocusEffect } from "expo-router";
+import * as Haptics from "expo-haptics";
 
 export default function TelaPesquisaPrecos() {
   const [busca, setBusca] = useState("");

@@ -1,28 +1,59 @@
-import { ScrollViewStyleReset } from 'expo-router/html';
+import { ScrollViewStyleReset } from "expo-router/html";
 
-// This file is web-only and used to configure the root HTML for every
-// web page during static rendering.
-// The contents of this function only run in Node.js environments and
-// do not have access to the DOM or browser APIs.
 export default function Root({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pt-br">
       <head>
         <meta charSet="utf-8" />
         <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, shrink-to-fit=no"
+        />
 
-        {/* 
-          Disable body scrolling on web. This makes ScrollView components work closer to how they do on native. 
-          However, body scrolling is often nice to have for mobile web. If you want to enable it, remove this line.
-        */}
+        {/* --- CONFIGURAÇÃO PWA --- */}
+        {/* Esta linha faz o navegador localizar o manifesto gerado pelo Expo */}
+        <link rel="manifest" href="/manifest.json" />
+
+        {/* Ícones para diferentes dispositivos */}
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+        {/* Tela de inicialização para iOS */}
+        <link
+          rel="apple-touch-startup-image"
+          href="/web-app-manifest-512x512.png"
+        />
+
+        {/* Cor da barra de status no celular */}
+        <meta name="theme-color" content="#2E7D32" />
+
+        {/* Configurações específicas para iOS (Safari) */}
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
+        <meta name="apple-mobile-web-app-title" content="CEASA Pesquisa" />
+        {/* ------------------------ */}
+
         <ScrollViewStyleReset />
 
-        {/* Using raw CSS styles as an escape-hatch to ensure the background color never flickers in dark-mode. */}
         <style dangerouslySetInnerHTML={{ __html: responsiveBackground }} />
-        {/* Add any additional <head> elements that you want globally available on web... */}
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            if ('serviceWorker' in navigator) {
+               window.addEventListener('load', () => {
+               navigator.serviceWorker.register('/sw.js');
+              });
+            }`,
+          }}
+        />
+      </body>
     </html>
   );
 }
@@ -31,8 +62,4 @@ const responsiveBackground = `
 body {
   background-color: #fff;
 }
-@media (prefers-color-scheme: dark) {
-  body {
-    background-color: #000;
-  }
-}`;
+`;

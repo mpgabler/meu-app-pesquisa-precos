@@ -6,12 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "meuapppesquisaprecos",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#2E7D32"
     },
     "ios": {
       "supportsTablet": true
@@ -19,7 +19,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#2E7D32"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
@@ -27,7 +27,19 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon-96x96.png",
+      "description": "Sistema de coleta de preços de mercado",
+      "themeColor": "#2E7D32",
+      "pwa": {
+        "display": "standalone",
+        "orientation": "portrait",
+        "themeColor": "#2E7D32",
+        "backgroundColor": "#ffffff",
+        "manifest": {
+          "short_name": "Pesquisa",
+          "start_url": "/"
+        }
+      }
     },
     "plugins": [
       "expo-router"
