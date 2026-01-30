@@ -1,4 +1,4 @@
-const CACHE_NAME = "ceasa-pesquisa-v2";
+const CACHE_NAME = "ceasa-pesquisa-v3";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -47,21 +47,32 @@ self.addEventListener("activate", (event) => {
 
 // Estratégia: Tenta carregar do cache primeiro, se falhar, vai na rede
 self.addEventListener("fetch", (event) => {
+  // Ignora o que não for HTTP/HTTPS (evita erros de extensões)
+  if (!event.request.url.startsWith("http")) return;
+
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse; // Retorna do cache se existir
-      }
-      return fetch(event.request).then((response) => {
-        // Se for um arquivo do nosso site, salva uma cópia no cache para a próxima vez
-        if (response.ok && event.request.url.startsWith(self.location.origin)) {
-          const responseToCache = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseToCache);
-          });
-        }
-        return response;
-      });
+      if (cachedResponse) return cachedResponse;
+
+      return fetch(event.request)
+        .then((response) => {
+          // SÓ CACHEIA SE FOR SUCESSO E TIPO 'basic'
+          if (
+            response &&
+            response.status === 200 &&
+            response.type === "basic"
+          ) {
+            const responseToCache = response.clone();
+            caches.open("ceasa-pesquisa-v3").then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Se falhar a rede (offline), apenas segue sem travar
+          return null;
+        });
     })
   );
 });

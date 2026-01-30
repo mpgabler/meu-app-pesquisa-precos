@@ -17,6 +17,9 @@ import { ROL_PRODUTOS } from "@/constants/Produtos"; // Agora usando seu rol com
 import { registrarUsoProduto, buscarFavoritos } from "@/services/storage";
 import { useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { useFonts } from 'expo-font';
+import { FontAwesome } from '@expo/vector-icons';
+
 
 export default function TelaPesquisaPrecos() {
   const [busca, setBusca] = useState("");
