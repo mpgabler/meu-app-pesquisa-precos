@@ -17,9 +17,8 @@ import { ROL_PRODUTOS } from "@/constants/Produtos"; // Agora usando seu rol com
 import { registrarUsoProduto, buscarFavoritos } from "@/services/storage";
 import { useFocusEffect } from "expo-router";
 import * as Haptics from "expo-haptics";
-import { useFonts } from 'expo-font';
-import { FontAwesome } from '@expo/vector-icons';
-
+import { useFonts } from "expo-font";
+import { FontAwesome } from "@expo/vector-icons";
 
 export default function TelaPesquisaPrecos() {
   const [busca, setBusca] = useState("");
@@ -78,7 +77,12 @@ export default function TelaPesquisaPrecos() {
     });
 
     if (sucesso) {
-      await registrarUsoProduto(produtoAtivo.nome); // Registra que este produto foi usado
+      await registrarUsoProduto(produtoAtivo.nome);
+
+      // ATUALIZAÇÃO MANUAL: Busca os novos favoritos imediatamente
+      const novosFavoritos = await buscarFavoritos();
+      setFavoritos(novosFavoritos);
+
       Alert.alert("Sucesso", "Dados salvos na tabela diária!");
       setProdutoAtivo(null);
       setBusca("");
@@ -114,23 +118,31 @@ export default function TelaPesquisaPrecos() {
             </TouchableOpacity>
           )}
         </View>
-         {/* SEÇÃO DE FAVORITOS */}
+        {/* SEÇÃO DE FAVORITOS */}
         {busca.length === 0 && favoritos.length > 0 && !produtoAtivo && (
           <View style={styles.secaoFavoritos}>
-            <Text style={styles.labelFavoritos}>
-              Frequentemente pesquisados:
-            </Text>
-            <View style={styles.rowFavoritos}>
+            <Text style={styles.labelFavoritos}>FREQUENTES</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.rowFavoritos}
+            >
               {favoritos.map((fav, index) => (
                 <TouchableOpacity
                   key={index}
                   style={styles.chipFavorito}
                   onPress={() => selecionarProduto(fav)}
                 >
-                  <Text style={styles.txtChip}>{fav.split(" ")[0]}</Text>
+                  <Ionicons
+                    name="star"
+                    size={12}
+                    color="#2e7d32"
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text style={styles.txtChip}>{fav.toUpperCase()}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
           </View>
         )}
         {/* LISTA DE SUGESTÕES DINÂMICA */}
@@ -274,21 +286,42 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   txtWhite: { color: "#fff", fontWeight: "bold", fontSize: 18 },
-  secaoFavoritos: { marginTop: 15 },
-  labelFavoritos: {
-    fontSize: 12,
-    color: "#95a5a6",
-    marginBottom: 8,
-    fontWeight: "bold",
+  secaoFavoritos: {
+    marginTop: 15,
+    marginBottom: 5,
   },
-  rowFavoritos: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  labelFavoritos: {
+    fontSize: 11,
+    color: "#95a5a6",
+    marginBottom: 10,
+    fontWeight: "800",
+    letterSpacing: 1,
+    paddingLeft: 2,
+  },
+  rowFavoritos: {
+    flexDirection: "row",
+    paddingRight: 20, // Espaço para não colar no fim do scroll
+  },
   chipFavorito: {
-    backgroundColor: "#e8f5e9",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff", // Fundo branco para contraste
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#c8e6c9",
+    borderColor: "#2ecc71", // Verde mais vivo
+    marginRight: 8,
+    // Sombra leve para profundidade
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  txtChip: { color: "#2e7d32", fontSize: 13, fontWeight: "500" },
+  txtChip: {
+    color: "#27ae60",
+    fontSize: 12,
+    fontWeight: "700",
+  },
 });

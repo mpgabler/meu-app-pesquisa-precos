@@ -37,7 +37,7 @@
         "themeColor": "#2E7D32",
         "backgroundColor": "#ffffff",
         "manifest": {
-          "short_name": "Pesquisa",
+          "short_name": "Pesquisa de Mercado",
           "start_url": "/"
         }
       }
