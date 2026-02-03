@@ -51,23 +51,35 @@ export default function TelaExportacao() {
       const hoje = new Date().toISOString().split("T")[0];
       const chave = `@pesquisa_${hoje}`;
 
-      const precosNumericos = novosPrecos.map((p) => {
-        const limpo = p.replace(/\./g, "").replace(",", ".");
-        return parseFloat(limpo) || 0;
-      });
+      // 1. Converte para números, ignorando campos vazios
+      const precosNumericos = novosPrecos
+        .map((p) => {
+          const limpo = p.replace(/\./g, "").replace(",", ".");
+          return parseFloat(limpo);
+        })
+        .filter((n) => !isNaN(n)); // Remove entradas inválidas
 
-      const novaLista = dados.map((item) => {
-        if (item.produto === itemParaEditar.produto) {
-          return { ...item, precos: precosNumericos };
-        }
-        return item;
-      });
+      let novaLista;
+
+      // 2. Se não sobrou nenhum preço, removemos o produto da lista
+      if (precosNumericos.length === 0) {
+        novaLista = dados.filter(
+          (item) => item.produto !== itemParaEditar.produto
+        );
+      } else {
+        // Caso contrário, atualizamos normalmente
+        novaLista = dados.map((item) => {
+          if (item.produto === itemParaEditar.produto) {
+            return { ...item, precos: precosNumericos };
+          }
+          return item;
+        });
+      }
 
       await AsyncStorage.setItem(chave, JSON.stringify(novaLista));
-
       setModalVisivel(false);
       carregarDados();
-      Alert.alert("Sucesso", "Preços atualizados!");
+      Alert.alert("Sucesso", "Relatório atualizado!");
     } catch (e) {
       Alert.alert("Erro", "Não foi possível salvar.");
     }
@@ -135,19 +147,47 @@ export default function TelaExportacao() {
               {novosPrecos.map((preco, index) => (
                 <View key={index} style={styles.modalInputGroup}>
                   <Text style={styles.modalLabel}>Amostra {index + 1}:</Text>
-                  <TextInput
-                    style={styles.modalInput}
-                    keyboardType="numeric"
-                    value={preco ? `R$ ${preco}` : ""}
-                    onChangeText={(text) => {
-                      const valorFormatado = formatarMoeda(text);
-                      const updated = [...novosPrecos];
-                      updated[index] = valorFormatado;
-                      setNovosPrecos(updated);
-                    }}
-                  />
+
+                  <View style={styles.rowInputExcluir}>
+                    <TextInput
+                      style={styles.modalInput}
+                      keyboardType="numeric"
+                      value={preco ? `R$ ${preco}` : ""}
+                      onChangeText={(text) => {
+                        const valorFormatado = formatarMoeda(text);
+                        const updated = [...novosPrecos];
+                        updated[index] = valorFormatado;
+                        setNovosPrecos(updated);
+                      }}
+                    />
+
+                    {/* ÍCONE DE EXCLUIR VALOR ESPECÍFICO */}
+                    <TouchableOpacity
+                      style={styles.btnRemoverAmostra}
+                      onPress={() => {
+                        const updated = novosPrecos.filter(
+                          (_, i) => i !== index
+                        );
+                        setNovosPrecos(updated);
+                      }}
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color="#e74c3c"
+                      />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ))}
+
+              {/* FEEDBACK CASO NÃO SOBRE NENHUMA AMOSTRA */}
+              {novosPrecos.length === 0 && (
+                <Text style={styles.txtAvisoExcluir}>
+                  Remover todas as amostras excluirá o produto do relatório ao
+                  salvar.
+                </Text>
+              )}
             </ScrollView>
 
             <View style={styles.modalButtons}>
@@ -299,5 +339,32 @@ const styles = StyleSheet.create({
     backgroundColor: "#27ae60",
     flex: 0.45,
     alignItems: "center",
+  },
+  rowInputExcluir: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  modalInput: {
+    flex: 1, // Faz o input ocupar o espaço restante
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+  },
+  btnRemoverAmostra: {
+    padding: 10,
+    backgroundColor: "#fff5f5",
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#feb2b2",
+  },
+  txtAvisoExcluir: {
+    textAlign: "center",
+    color: "#e74c3c",
+    fontSize: 12,
+    marginTop: 10,
+    fontStyle: "italic",
   },
 });
