@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from "react";
+import React, { useState, useMemo, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,12 +15,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { formatarMoeda } from "@/utilitarios/formataMoeda";
 import { ROL_PRODUTOS } from "@/constants/Produtos"; // Agora usando seu rol completo
 import { registrarUsoProduto, buscarFavoritos } from "@/services/storage";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useGlobalSearchParams, useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
 import { useFonts } from "expo-font";
 import { FontAwesome } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function TelaPesquisaPrecos() {
+  const params = useGlobalSearchParams();
+  const { editar } = useGlobalSearchParams(); // Pegamos diretamente a variável
+  const router = useRouter();
   const [busca, setBusca] = useState("");
   const [produtoAtivo, setProdutoAtivo] = useState(null);
   const [favoritos, setFavoritos] = useState<string[]>([]);
@@ -28,6 +32,35 @@ export default function TelaPesquisaPrecos() {
   // Buscar favoritos ao focar na tela
   useFocusEffect(
     useCallback(() => {
+      buscarFavoritos().then(setFavoritos);
+    }, [])
+  );
+
+  // Efeito para capturar o produto vindo da outra tela
+  console.log("Parâmetros recebidos na Coleta:", params);
+
+  // ... resto dos estados
+
+  useFocusEffect(
+    useCallback(() => {
+      const verificarEdicao = async () => {
+        const produtoParaEditar = await AsyncStorage.getItem(
+          "@produto_para_editar"
+        );
+
+        if (produtoParaEditar) {
+          // 1. Preenche a tela
+          setBusca(produtoParaEditar);
+          setProdutoAtivo({ nome: produtoParaEditar });
+
+          // 2. LIMPA O SINAL (Crucial para não abrir toda hora)
+          await AsyncStorage.removeItem("@produto_para_editar");
+
+          Keyboard.dismiss();
+        }
+      };
+
+      verificarEdicao();
       buscarFavoritos().then(setFavoritos);
     }, [])
   );
